@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SolarWise | Solar Energy Usage Advisor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#"><span class="brand-icon">☀</span><span>SolarWise<small>ENERGY ADVISOR</small></span></a>
+    <nav><a href="#how-it-works">How it works</a><a href="#calculator">Calculator</a><a href="#about">About project</a></nav>
+    <a class="nav-cta" href="#calculator">Get estimate ↗</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="pulse"></span> SMARTER ENERGY STARTS HERE</div>
+        <h1>Make every ray<br>of sunshine <em>count.</em></h1>
+        <p class="hero-text">Estimate your solar energy generation, understand household usage, and get simple recommendations to make better use of clean energy.</p>
+        <div class="hero-actions"><a class="button primary" href="#calculator">Calculate my energy <span>→</span></a><a class="text-link" href="#how-it-works">Explore how it works ↓</a></div>
+        <div class="trust-row"><span>✓ Easy calculations</span><span>✓ Practical suggestions</span><span>✓ Student AI project</span></div>
+      </div>
+      <div class="hero-art">
+        <div class="sun"></div><div class="sun-glow"></div>
+        <div class="hill hill-back"></div><div class="hill hill-front"></div>
+        <div class="solar-panel panel-one"><div class="panel-grid"></div></div>
+        <div class="solar-panel panel-two"><div class="panel-grid"></div></div>
+        <div class="float-card"><span class="mini-sun">☀</span><div><strong>Clean energy</strong><small>One smart choice at a time</small></div></div>
+        <div class="art-caption">POWERED BY THE SUN <span>✳</span></div>
+      </div>
+    </section>
+
+    <section class="stats" id="how-it-works">
+      <div><span class="stat-icon">ϟ</span><p><strong>Estimate</strong><small>Daily & monthly solar output</small></p></div>
+      <div><span class="stat-icon">⌂</span><p><strong>Understand</strong><small>Compare energy use and generation</small></p></div>
+      <div><span class="stat-icon">✦</span><p><strong>Improve</strong><small>Get simple usage suggestions</small></p></div>
+    </section>
+
+    <section class="calculator-section" id="calculator">
+      <div class="section-heading">
+        <div><div class="eyebrow">YOUR ENERGY SNAPSHOT</div><h2>Build your solar estimate</h2></div>
+        <p>Enter approximate values below. The result is an educational estimate, not a professional solar survey.</p>
+      </div>
+      <div class="workspace">
+        <form class="form-card" method="POST" action="#results">
+          <div class="form-title"><span class="form-icon">☼</span><div><h3>System & usage details</h3><p>Adjust the sample values for your home.</p></div></div>
+          <div class="fields-grid">
+            <label>Solar panel capacity <span>kW</span><input name="panel_capacity" type="number" min="0.1" step="0.1" value="{{ request.form.get('panel_capacity', '2') }}" required><small>Total rated capacity of your panels.</small></label>
+            <label>Effective sunlight <span>hours/day</span><input name="sunlight_hours" type="number" min="0" max="15" step="0.5" value="{{ request.form.get('sunlight_hours', '5') }}" required><small>Approximate peak-sun hours.</small></label>
+            <label>System efficiency <span>%</span><input name="efficiency" type="number" min="1" max="100" step="1" value="{{ request.form.get('efficiency', '80') }}" required><small>Allows for system losses.</small></label>
+            <label>Household usage <span>kWh/day</span><input name="daily_use" type="number" min="0" step="0.1" value="{{ request.form.get('daily_use', '6') }}" required><small>Average daily electricity use.</small></label>
+            <label class="full-width">Electricity tariff <span>₹ per kWh</span><input name="tariff" type="number" min="0" step="0.1" value="{{ request.form.get('tariff', '8') }}" required><small>Use your approximate tariff from the electricity bill.</small></label>
+          </div>
+          <button class="button primary submit-button" type="submit">Calculate my estimate <span>→</span></button>
+          <p class="privacy-note">ⓘ Values are used only to calculate this estimate in this app.</p>
+        </form>
+
+        <div class="result-column" id="results">
+          {% if result %}
+          <div class="result-card">
+            <div class="result-top"><div><div class="eyebrow">YOUR ESTIMATED RESULTS</div><h3>Energy at a glance</h3></div><span class="result-badge">Calculated</span></div>
+            <div class="metrics">
+              <div class="metric"><span>☀</span><small>Solar generation / day</small><strong>{{ result.solar_daily }} <i>kWh</i></strong></div>
+              <div class="metric"><span>⌂</span><small>Monthly household use</small><strong>{{ result.usage_monthly }} <i>kWh</i></strong></div>
+              <div class="metric"><span>↗</span><small>Monthly solar estimate</small><strong>{{ result.solar_monthly }} <i>kWh</i></strong></div>
+              <div class="metric"><span>₹</span><small>Illustrative grid cost*</small><strong>₹{{ result.bill }}</strong></div>
+            </div>
+            <div class="chart-wrap"><canvas id="energyChart" aria-label="Monthly solar generation compared with household use"></canvas></div>
+            <div class="advice advice-{{ result.status }}"><span class="advice-icon">✦</span><div><strong>Smart recommendation</strong><p>{{ result.recommendation }}</p></div></div>
+            <p class="fine-print">*Simple estimate based on the values entered. Actual bills depend on tariffs, fixed charges, net metering, weather, and system performance. This estimate does not model those factors.</p>
+          </div>
+          <script>
+            const chartCanvas = document.getElementById('energyChart');
+            new Chart(chartCanvas, {
+              type: 'bar',
+              data: {
+                labels: ['Solar generation', 'Household use'],
+                datasets: [{
+                  label: 'Monthly energy (kWh)',
+                  data: [{{ result.solar_monthly }}, {{ result.usage_monthly }}],
+                  backgroundColor: ['#e8a83e', '#2f7867'],
+                  borderRadius: 8,
+                  maxBarThickness: 64
+                }]
+              },
+              options: {
+                responsive: true,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.raw} kWh` } } },
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Energy (kWh)' }, grid: { color: '#edf0e9' } }, x: { grid: { display: false } } }
+              }
+            });
+          </script>
+          {% else %}
+          <div class="empty-result">
+            <div class="empty-illustration"><div class="empty-sun">☀</div><div class="empty-ground"></div><div class="empty-panel"></div></div>
+            <div class="eyebrow">READY WHEN YOU ARE</div><h3>Your energy report will appear here.</h3><p>Enter your system and usage details, then calculate to see estimated generation and tailored suggestions.</p>
+            <div class="empty-points"><span>01 <b>Enter your values</b></span><span>02 <b>Compare generation & use</b></span><span>03 <b>Read your recommendation</b></span></div>
+          </div>
+          {% endif %}
+          {% if error %}<div class="error-message">{{ error }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="steps-section" id="about">
+      <div class="eyebrow">A SIMPLE RULE-BASED PROTOTYPE</div><h2>From sunlight to a smarter decision.</h2>
+      <div class="steps">
+        <article><span>01</span><h3>Collect inputs</h3><p>Panel capacity, sunlight hours, system efficiency, household use, and electricity tariff.</p></article>
+        <article><span>02</span><h3>Calculate estimates</h3><p>Python calculates estimated solar generation and compares it with household consumption.</p></article>
+        <article><span>03</span><h3>Suggest actions</h3><p>Simple decision rules provide practical ideas based on the estimated energy balance.</p></article>
+      </div>
+      <p class="project-note"><strong>Academic project note:</strong> This version is a rule-based AI prototype using Python and Flask. It does not use a trained machine-learning model or live sensor data.</p>
+    </section>
+  </main>
+  <footer><a class="brand footer-brand" href="#"><span class="brand-icon">☀</span><span>SolarWise<small>ENERGY ADVISOR</small></span></a><p>Built as a student micro project · Foundation of Artificial Intelligence</p><span class="footer-mark">POWER A BRIGHTER TOMORROW ✳</span></footer>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
